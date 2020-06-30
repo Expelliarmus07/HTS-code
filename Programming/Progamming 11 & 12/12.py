@@ -1,41 +1,72 @@
-import requests
-import json
+import LoginToHTS
 
-def is_prime(num):
-    return all(num % i for i in range(2, num))
 
 def get_string():
-    url = 'https://www.hackthissite.org/missions/prog/12/'
+    content = LoginToHTS.login_and_get("https://www.hackthissite.org/missions/prog/12/")
+    content_list = content.split("<b>")
+
+    string_untrimmed = ""
+    for i in range(len(content_list)):
+        if "String: </b>" in content_list[i]:
+            string_untrimmed = content_list[i]
+            break
+
+    string_trimmed = string_untrimmed[38:].split("\"")[0]
+    return string_trimmed
 
 
-def submit(answer):
-    url = '/missions/prog/12/index.php'
+def is_prime(num):
+    if num == 2 or num == 3 or num == 5 or num == 7:
+        return 1
+    if num == 1 or num == 0:
+        return 0
+    return 2
 
 
-if __name__ == '__main__':
-    get_string()
-    primes = []
-    composites = []
+def calc_answer(string):
+    ints = []
     chars = []
-    output = ''
+    for char in string:
+        try:
+            test_int = int(char)
+            ints.append(test_int)
+        except ValueError:
+            chars.append(char)
 
-    with open('string.txt', 'r') as fr:
-        string = fr.readline()
+    primes = []
+    compps = []
+    for test_int in ints:
+        if is_prime(test_int) == 1:
+            primes.append(test_int)
+        elif is_prime(test_int) == 2:
+            compps.append(test_int)
 
-    for c in string:
-        if c.isdigit():
-            c = int(c)
-            if c > 1:
-                if is_prime(c):
-                    primes.append(c)
-                else:
-                    composites.append(c)
-        else:
-            if len(chars) < 25:
-                chars.append(c)
-                output += chr(ord(c)+1)
+    compps_tot = 0
+    for compp in compps:
+        compps_tot += compp
 
-    total = sum(primes) * sum(composites)
-    answer = output+str(total)
+    primes_tot = 0
+    for prime in primes:
+        primes_tot += prime
 
+    times_result = compps_tot * primes_tot
+
+    shifted = ""
+    for letter in chars:
+        shifted = shifted + chr(ord(letter) + 1)
+
+    return shifted[:25] + str(times_result)
+
+
+def run():
+    string_test = get_string()
+    print(string_test)
+    answer = calc_answer(string_test)
     print(answer)
+    repsonse = LoginToHTS.post_data_with_headers('https://www.hackthissite.org/missions/prog/12/index.php', {'solution': answer, 'submitbutton': 'Submit (remaining time: 3 seconds)'}, {'Referer': 'https://www.hackthissite.org/missions/prog/12/'})
+    print(repsonse.content.decode("utf-8"))
+    print("Done")
+
+
+if __name__ == "__main__":
+    run()
